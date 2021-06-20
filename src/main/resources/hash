@@ -1,0 +1,96 @@
+
+3. Operation steps
+
+
+Judge whether the key value is empty or null for the array table[i], otherwise, execute resize() to expand the capacity;
+
+Calculate the hash value to the inserted array index I according to the key value key. If table[i]==null, directly create a new node to add and turn to ⑥. If table[i] is not empty, turn to ③;
+
+Judge whether the first element of table[i] is the same as key. If the same directly covers value, otherwise, turn to ④. The same here refers to hashCode and equals;
+
+Determine whether table[i] is a treeNode, that is, whether table[i] is a red black tree. If it is a red black tree, insert key value pairs directly in the tree, otherwise, turn to ⑤;
+
+Traverse table[i] to determine whether the length of the linked list is greater than 8. If the length is greater than 8, convert the linked list to a red black tree (and determine the current array capacity). Perform the insertion operation in the red black tree, otherwise perform the insertion operation of the linked list. If the key already exists in the traversal process, directly overwrite the value;
+
+After inserting successfully, judge whether the actual key value pair quantity size exceeds the maximum capacity threshold. If it exceeds the maximum capacity threshold, expand the capacity.
+
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) {
+    Node<K,V>[] tab; Node<K,V> p; int n, i;
+
+    // First, judge whether the table is empty
+    // We know that in the three constructors of HashMap, the table will not be initialized, so when the first value is put, the table must be empty and needs to be initialized
+    // table initialization uses the resize function, which we talked about in the previous article
+    // It can be seen that the initialization of table is delayed to put operation
+    if ((tab = table) == null || (n = tab.length) == 0)
+        n = (tab = resize()).length;
+
+    // In this paper, we use the method of ` (n-1) & hash ` to calculate the subscript of key
+    // If there is no value in the bucket corresponding to the key, we will create a new Node and put it in the bucket
+    if ((p = tab[i = (n - 1) & hash]) == null)
+        tab[i] = newNode(hash, key, value, null);
+
+    // Here's the target position. There's something in the barrel
+    else {
+        Node<K,V> e; K k;
+        // Here, we first determine whether the current key value to be stored is equal to the existing key value
+        // Two conditions must be satisfied when the key values are equal
+        //    1. The hash value is the same
+        //    2. Both '= =' or 'equals', etc
+        if (p.hash == hash && ((k = p.key) == key || (key != null && key.equals(k))))
+            e = p; // When the key already exists, e saves the original key value pair
+
+        // This indicates that the bucket to be saved has been occupied, and the key stored in the occupied location is inconsistent with the key value to be stored
+
+        // As mentioned before, when the length of the linked list exceeds 8, it will be stored in a red black tree. This is to determine whether the linked list or the red black tree is placed in the bucket
+        else if (p instanceof TreeNode)
+            // Let's talk about the part of the red black tree later
+            e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
+
+        //It's linked list storage. We need to traverse the linked list in order
+        else {
+            for (int binCount = 0; ; ++binCount) {
+                // If the end node of the linked list has been found and the target key has not been found, then the target key does not exist. Then we will create a new node and connect it to the end node
+                if ((e = p.next) == null) {
+                    p.next = newNode(hash, key, value, null);
+                    // If the length of the linked list reaches 8, convert the linked list into red and black numbers to improve the search performance
+                    if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                        treeifyBin(tab, hash);
+                    break;
+                }
+                // If the target key is found in the linked list, exit directly
+                // When exiting, e saves the key value pair of the target key
+                if (e.hash == hash &&
+                    ((k = e.key) == key || (key != null && key.equals(k))))
+                    break;
+                p = e;
+            }
+        }
+
+        // Here it indicates that either the key to be stored exists, and e saves the existing value
+        // If the key to be stored does not exist, a new Node has been created to insert the key value, and the value of e is Null
+
+        // If the key value to be stored already exists
+        if (e != null) { // existing mapping for key
+            V oldValue = e.value;
+
+            // As explained earlier, only if answer
+            // This means that if the old value exists or the old value is null, the old value will be overwritten with the new value
+            if (!onlyIfAbsent || oldValue == null)
+                e.value = value;
+            afterNodeAccess(e); //This function is only used in LinkedHashMap. Here is an empty function
+            // Return old value
+            return oldValue;
+        }
+    }
+
+    // This shows that there is no key to be stored in the table, and we have inserted the new key into the array
+
+    ++modCount; // This is not available for the time being
+
+    // Because a new value is inserted, we have to increase the array size by 1 and determine whether we need to re expand it
+    if (++size > threshold)
+        resize();
+    afterNodeInsertion(evict); //This function is only used in LinkedHashMap. Here is an empty function
+    return null;
+}
+
