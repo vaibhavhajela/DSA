@@ -1,0 +1,84 @@
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Set;
+
+public class GraphTheory {
+
+    private LinkedList<Integer> adj[];
+
+    public GraphTheory(int v){
+        adj = new LinkedList[v];
+        for ( int i=0; i < v; i++){
+            adj[i] = new LinkedList<Integer>();
+        }
+    }
+
+    public void addEdge(int source, int destination){
+        adj[source].add(destination);
+        adj[destination].add(source);
+    }
+
+    public int bfs (int source, int destination){
+        //Temp data structures creation
+        Set<Integer> visited = new HashSet<Integer>();
+        int parent[] = new int[adj.length];
+        Queue<Integer> queue = new LinkedList<Integer>();
+
+        //Processing source/root
+        processNode(source, -1, queue, visited, parent);
+
+        while (!queue.isEmpty()){
+            int current = queue.poll();
+            if (current == destination) break;
+            for ( int neighbour : adj[current]) {
+                if (!visited.contains(neighbour)) continue;
+                processNode(neighbour, current, queue, visited, parent);
+            }
+        }
+
+        return backtrackToCalcShortestDistance(parent,destination);
+
+    }
+
+    private void processNode(int node, int parentNode, Queue<Integer> queue,Set<Integer> visited, int parent[]) {
+        queue.add(node);
+        visited.add(node);
+        parent[node] = parentNode;
+    }
+
+    private int backtrackToCalcShortestDistance(int[] parent, int destination){
+        // 0 => 3
+        int target = destination;
+        int distance = 0;
+
+        while ( target != -1) {
+            System.out.println(target + "->");
+            target = parent[target];
+            distance++;
+        }
+        // 3 -> 4 ->1
+        //dist = 2
+        return distance;
+    }
+
+
+    public boolean dfs(int source, int destination){
+        Set<Integer> visited = new HashSet<Integer>();
+
+        visited.add(source);
+        return actualDfs(source, destination, visited);
+    }
+
+    private boolean actualDfs(int source, int destination, Set<Integer> visited){
+        //exit condition
+        if ( source == destination) return true;
+        for (int neighbour: adj[source]){
+            if (visited.contains(neighbour)) continue;
+            visited.add(neighbour);
+            ///queue.add();
+            boolean isPathPossible = actualDfs(neighbour,destination, visited);
+            if (isPathPossible) return true;
+        }
+        return false;
+    }
